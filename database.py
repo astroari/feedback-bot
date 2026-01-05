@@ -167,33 +167,35 @@ async def save_feedback_to_db(
     
     try:
         async with db.acquire() as conn:
-            # Insert feedback
-            feedback_id = await conn.fetchval(
-                """
-                INSERT INTO feedback (message, branch, name, phone, created_at)
-                VALUES ($1, $2, $3, $4, $5)
-                RETURNING id
-                """,
-                message,
-                branch,
-                name,
-                phone,
-                datetime.now()
-            )
-            
-            # Insert file records if any
-            if file_paths:
-                for file_path, file_type in file_paths:
-                    await conn.execute(
-                        """
-                        INSERT INTO feedback_files (feedback_id, file_path, file_type, created_at)
-                        VALUES ($1, $2, $3, $4)
-                        """,
-                        feedback_id,
-                        file_path,
-                        file_type,
-                        datetime.now()
-                    )
+            # Use a transaction to ensure atomicity and handle concurrent submissions
+            async with conn.transaction():
+                # Insert feedback
+                feedback_id = await conn.fetchval(
+                    """
+                    INSERT INTO feedback (message, branch, name, phone, created_at)
+                    VALUES ($1, $2, $3, $4, $5)
+                    RETURNING id
+                    """,
+                    message,
+                    branch,
+                    name,
+                    phone,
+                    datetime.now()
+                )
+                
+                # Insert file records if any
+                if file_paths:
+                    for file_path, file_type in file_paths:
+                        await conn.execute(
+                            """
+                            INSERT INTO feedback_files (feedback_id, file_path, file_type, created_at)
+                            VALUES ($1, $2, $3, $4)
+                            """,
+                            feedback_id,
+                            file_path,
+                            file_type,
+                            datetime.now()
+                        )
         
         return feedback_id
     except Exception as e:
@@ -210,16 +212,18 @@ async def update_user_submission_time(user_id: int) -> None:
     
     try:
         async with db.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO feedback_submissions (user_id_hash, last_submission_time)
-                VALUES ($1, $2)
-                ON CONFLICT (user_id_hash) 
-                DO UPDATE SET last_submission_time = $2
-                """,
-                user_id_hash,
-                datetime.now()
-            )
+            # Use a transaction to ensure atomicity for concurrent updates
+            async with conn.transaction():
+                await conn.execute(
+                    """
+                    INSERT INTO feedback_submissions (user_id_hash, last_submission_time)
+                    VALUES ($1, $2)
+                    ON CONFLICT (user_id_hash) 
+                    DO UPDATE SET last_submission_time = $2
+                    """,
+                    user_id_hash,
+                    datetime.now()
+                )
     except Exception as e:
         logging.error(f"Error updating user submission time: {e}")
 
