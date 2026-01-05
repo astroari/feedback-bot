@@ -4,14 +4,13 @@ import os
 from datetime import datetime
 from hashlib import md5
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import Dict, List, Optional, Set, Tuple
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart, Command, BaseFilter
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram import types
-from typing import Dict, List
 
 
 
@@ -32,7 +31,7 @@ pending_feedback = {}
 media_groups: Dict[str, List[Message]] = {}
 
 # Track which media groups are already being processed to avoid duplicates
-processing_media_groups: set[str] = set()
+processing_media_groups: Set[str] = set()
 
 
 class BranchCallback(CallbackData, prefix="branch"):
