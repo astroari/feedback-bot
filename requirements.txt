@@ -1,6 +1,6 @@
 aiofiles==24.1.0
 aiogram==3.13.1
-aiohappyeyeballs==2.6.1
+aiohappyeyeballs==2.4.4
 aiohttp==3.13.2
 aiosignal==1.4.0
 annotated-types==0.7.0
