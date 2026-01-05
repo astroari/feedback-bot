@@ -91,9 +91,9 @@ def get_branch_keyboard():
 async def handle_start(message: Message) -> None:
     """Handle /start command - show welcome message."""
     await message.answer(
-        "Hi there! Welcome to the Feedback Bot! 👋\n\n"
-        "I'm here to help you submit feedback. Use /new to start creating a new feedback submission.\n\n"
-        "Your feedback helps us improve, and you can choose to remain anonymous or add your details."
+        "Dobryj den'! Добро пожаловать в бота для обратной связи! 👋\n\n"
+        "Я здесь, чтобы помочь вам отправить претензии, пожелания, предложения по улучшению, идеи, жалобы, комментарии по процессам, условиям труда, управлению, коммуникациям, любые другие мысли и обращения. Используйте /new, чтобы начать создание нового отзыва.\n\n"
+        "Ваша обратная связь помогает нам улучшаться, и вы можете остаться анонимным или добавить свои данные."
     )
 
 
@@ -107,7 +107,7 @@ async def handle_new(message: Message) -> None:
         time_passed = (datetime.now() - last_submission.replace(tzinfo=None) if last_submission.tzinfo else datetime.now() - last_submission).total_seconds()
         seconds_left = max(0, int(30 - time_passed))
         await message.answer(
-            f"⏰ You've already submitted feedback recently. Please wait {seconds_left} more second(s) before submitting again."
+            f"⏰ Вы уже отправили отзыв недавно. Пожалуйста, подождите еще {seconds_left} секунд(ы) перед повторной отправкой."
         )
         return
     
@@ -125,8 +125,9 @@ async def handle_new(message: Message) -> None:
         pending_feedback.pop(key, None)
     
     await message.answer(
-        "Hi there! I'm here to collect your feedback.\n\n"
-        "First, please select your branch:",
+        "Ваше обращение полностью анонимно и конфиденциально.\n\n"
+        "Вы можете указать свои контактные данные или имя по желанию — это необязательно.\n\n"
+        "Сначала, пожалуйста, выберите ваш филиал:",
         reply_markup=get_branch_keyboard()
     )
 
@@ -135,11 +136,11 @@ def get_feedback_keyboard(feedback_hash: str):
     """Create inline keyboard for feedback options."""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="➕ Add my details", 
+            text="➕ Добавить мои данные", 
             callback_data=FeedbackCallback(action="add_details", value=feedback_hash).pack()
         )],
         [InlineKeyboardButton(
-            text="🔒 Keep anonymous", 
+            text="🔒 Остаться анонимным", 
             callback_data=FeedbackCallback(action="keep_anonymous", value=feedback_hash).pack()
         )]
     ])
@@ -155,8 +156,8 @@ async def handle_branch_selection(callback: CallbackQuery, callback_data: Branch
     pending_feedback[f"waiting_feedback:{user_id}"] = True
     
     await callback.message.edit_text(
-        f"✅ Branch selected: {branch}\n\n"
-        "Now please write your feedback message:"
+        f"✅ Филиал выбран: {branch}\n\n"
+        "Теперь, пожалуйста, напишите ваш отзыв:"
     )
     await callback.answer()
 
@@ -214,7 +215,7 @@ async def handle_feedback(message: Message) -> None:
     # If no text, ask for text
     if not feedback_text:
         await message.answer(
-            "Please send your feedback as a text message."
+            "Пожалуйста, отправьте ваш отзыв текстовым сообщением."
         )
         return
     
@@ -236,18 +237,18 @@ async def handle_feedback(message: Message) -> None:
         # Ask if user wants to attach files
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
-                text="Yes",
+                text="Да",
                 callback_data=FileAttachmentCallback(action="yes", feedback_hash=feedback_hash).pack()
             )],
             [InlineKeyboardButton(
-                text="No",
+                text="Нет",
                 callback_data=FileAttachmentCallback(action="no", feedback_hash=feedback_hash).pack()
             )]
         ])
         
         await message.answer(
-            "✅ Thank you for your feedback!\n\n"
-            "Do you want to attach any images or files?",
+            "✅ Спасибо за ваш отзыв!\n\n"
+            "Хотите прикрепить изображения или файлы?",
             reply_markup=keyboard
         )
 
@@ -306,8 +307,8 @@ async def handle_file_attachment_yes(callback: CallbackQuery, callback_data: Fil
     pending_feedback[f"waiting_files:{user_id}"] = feedback_hash
     
     await callback.message.edit_text(
-        "📎 Please send your images or files. You can send multiple files.\n\n"
-        "After you're done, use the buttons below to continue."
+        "📎 Пожалуйста, отправьте ваши изображения или файлы. Вы можете отправить несколько файлов.\n\n"
+        "После того, как закончите, используйте кнопки ниже, чтобы продолжить."
     )
     await callback.answer()
 
@@ -318,15 +319,15 @@ async def handle_file_attachment_no(callback: CallbackQuery, callback_data: File
     feedback_data = pending_feedback.get(feedback_hash)
     
     if not feedback_data:
-        await callback.answer("Feedback not found. Please submit again.", show_alert=True)
+        await callback.answer("Отзыв не найден. Пожалуйста, отправьте снова.", show_alert=True)
         return
     
     # Proceed directly to anonymity question
     keyboard = get_feedback_keyboard(feedback_hash)
     
     await callback.message.edit_text(
-        "✅ Thank you for your feedback!\n\n"
-        "Do you want to add your details or keep the submission anonymous?",
+        "✅ Спасибо за ваш отзыв!\n\n"
+        "Хотите добавить ваши данные или оставить отправку анонимной?",
         reply_markup=keyboard
     )
     await callback.answer()
@@ -392,11 +393,11 @@ async def process_media_group(media_group_id: str, user_id: int, feedback_hash: 
         # Show confirmation buttons (only once for the group)
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
-                text="Done, continue",
+                text="Готово, продолжить",
                 callback_data=FileAttachmentCallback(action="done", feedback_hash=feedback_hash).pack()
             )],
             [InlineKeyboardButton(
-                text="Add more files",
+                text="Добавить еще файлы",
                 callback_data=FileAttachmentCallback(action="add_more", feedback_hash=feedback_hash).pack()
             )]
         ])
@@ -404,8 +405,8 @@ async def process_media_group(media_group_id: str, user_id: int, feedback_hash: 
         file_count = len(existing_files)
         # Send confirmation to the last message in the group
         await messages[-1].answer(
-            f"✅ Files received! Total files: {file_count}\n\n"
-            "What would you like to do?",
+            f"✅ Файлы получены! Всего файлов: {file_count}\n\n"
+            "Что вы хотите сделать?",
             reply_markup=keyboard
         )
     finally:
@@ -423,7 +424,7 @@ async def handle_file_upload(message: Message, user_id: int) -> None:
     
     feedback_data = pending_feedback.get(feedback_hash)
     if not feedback_data:
-        await message.answer("Feedback not found. Please submit again.")
+        await message.answer("Отзыв не найден. Пожалуйста, отправьте снова.")
         pending_feedback.pop(waiting_files_key, None)
         return
     
@@ -465,7 +466,7 @@ async def handle_file_upload(message: Message, user_id: int) -> None:
             file_paths.append((file_path, "document"))
     
     if not file_paths:
-        await message.answer("Please send an image or file.")
+        await message.answer("Пожалуйста, отправьте изображение или файл.")
         return
     
     # Add files to feedback data
@@ -477,19 +478,19 @@ async def handle_file_upload(message: Message, user_id: int) -> None:
     # Show confirmation buttons
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="Done, continue",
+            text="Готово, продолжить",
             callback_data=FileAttachmentCallback(action="done", feedback_hash=feedback_hash).pack()
         )],
         [InlineKeyboardButton(
-            text="Add more files",
+            text="Добавить еще файлы",
             callback_data=FileAttachmentCallback(action="add_more", feedback_hash=feedback_hash).pack()
         )]
     ])
     
     file_count = len(existing_files)
     await message.answer(
-        f"✅ File received! Total files: {file_count}\n\n"
-        "What would you like to do?",
+        f"✅ Файл получен! Всего файлов: {file_count}\n\n"
+        "Что вы хотите сделать?",
         reply_markup=keyboard
     )
 
@@ -504,15 +505,15 @@ async def handle_file_done(callback: CallbackQuery, callback_data: FileAttachmen
     
     feedback_data = pending_feedback.get(feedback_hash)
     if not feedback_data:
-        await callback.answer("Feedback not found. Please submit again.", show_alert=True)
+        await callback.answer("Отзыв не найден. Пожалуйста, отправьте снова.", show_alert=True)
         return
     
     # Proceed to anonymity question
     keyboard = get_feedback_keyboard(feedback_hash)
     
     await callback.message.edit_text(
-        "✅ Thank you for your feedback!\n\n"
-        "Do you want to add your details or keep the submission anonymous?",
+        "✅ Спасибо за ваш отзыв!\n\n"
+        "Хотите добавить ваши данные или оставить отправку анонимной?",
         reply_markup=keyboard
     )
     await callback.answer()
@@ -530,8 +531,8 @@ async def handle_file_add_more(callback: CallbackQuery, callback_data: FileAttac
     file_count = len(feedback_data.get("files", [])) if feedback_data else 0
     
     await callback.message.edit_text(
-        f"📎 Please send more images or files. Current files: {file_count}\n\n"
-        "After you're done, use the buttons below to continue."
+        f"📎 Пожалуйста, отправьте еще изображения или файлы. Текущих файлов: {file_count}\n\n"
+        "После того, как закончите, используйте кнопки ниже, чтобы продолжить."
     )
     await callback.answer()
 
@@ -542,7 +543,7 @@ async def handle_keep_anonymous(callback: CallbackQuery, callback_data: Feedback
     feedback_data = pending_feedback.pop(feedback_hash, None)
     
     if not feedback_data:
-        await callback.answer("Feedback not found. Please submit again.", show_alert=True)
+        await callback.answer("Отзыв не найден. Пожалуйста, отправьте снова.", show_alert=True)
         return
     
     feedback_text = feedback_data.get("text") if isinstance(feedback_data, dict) else feedback_data
@@ -553,12 +554,12 @@ async def handle_keep_anonymous(callback: CallbackQuery, callback_data: Feedback
     try:
         await save_feedback(feedback_text, branch, user_id, name=None, phone=None, file_paths=file_paths)
         await callback.message.edit_text(
-            "✅ Your feedback has been saved anonymously.\n\n"
-            "Thank you for your submission!"
+            "✅ Ваш отзыв был сохранен анонимно.\n\n"
+            "Спасибо за вашу отправку!"
         )
     except Exception as e:
         logging.error(f"Error saving feedback: {e}")
-        await callback.answer("Error saving feedback. Please try again.", show_alert=True)
+        await callback.answer("Ошибка при сохранении отзыва. Пожалуйста, попробуйте снова.", show_alert=True)
 
 
 async def handle_add_details(callback: CallbackQuery, callback_data: FeedbackCallback) -> None:
@@ -567,14 +568,14 @@ async def handle_add_details(callback: CallbackQuery, callback_data: FeedbackCal
     feedback_data = pending_feedback.get(feedback_hash)
     
     if not feedback_data:
-        await callback.answer("Feedback not found. Please submit again.", show_alert=True)
+        await callback.answer("Отзыв не найден. Пожалуйста, отправьте снова.", show_alert=True)
         return
     
     # Store the hash in pending_feedback with a special marker to indicate we're waiting for name
     pending_feedback[f"waiting_name:{callback.from_user.id}"] = feedback_hash
     
     await callback.message.edit_text(
-        "Please provide your name:"
+        "Пожалуйста, укажите ваше имя:"
     )
     await callback.answer()
 
@@ -592,14 +593,14 @@ async def handle_details_submission(message: Message) -> None:
         name = message.text.strip()
         
         if not feedback_data:
-            await message.answer("Feedback not found. Please submit again.")
+            await message.answer("Отзыв не найден. Пожалуйста, отправьте снова.")
             return
         
         # Store name and feedback_hash, then ask for phone number
         pending_feedback[f"user_name:{user_id}"] = name
         pending_feedback[f"waiting_phone:{user_id}"] = feedback_hash
         
-        await message.answer("Thank you! Now please provide your phone number:")
+        await message.answer("Спасибо! Теперь, пожалуйста, укажите ваш номер телефона:")
         return
     
     # Check if we're waiting for phone number
@@ -611,7 +612,7 @@ async def handle_details_submission(message: Message) -> None:
         phone = message.text.strip()
         
         if not feedback_data:
-            await message.answer("Feedback not found. Please submit again.")
+            await message.answer("Отзыв не найден. Пожалуйста, отправьте снова.")
             return
         
         # Extract feedback text and branch
@@ -622,13 +623,13 @@ async def handle_details_submission(message: Message) -> None:
         try:
             await save_feedback(feedback_text, branch, user_id, name=name, phone=phone, file_paths=file_paths)
             await message.answer(
-                "✅ Your feedback has been saved with your details.\n\n"
-                "Thank you for your submission!"
+                "✅ Ваш отзыв был сохранен с вашими данными.\n\n"
+                "Спасибо за вашу отправку!"
             )
         except Exception as e:
             logging.error(f"Error saving feedback: {e}")
             await message.answer(
-                "❌ Sorry, there was an error saving your feedback. Please try again later."
+                "❌ Извините, произошла ошибка при сохранении вашего отзыва. Пожалуйста, попробуйте позже."
             )
 
 
