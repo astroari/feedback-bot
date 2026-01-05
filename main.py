@@ -66,23 +66,23 @@ def get_branch_keyboard():
     """Create inline keyboard for branch selection."""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="Chinobod",
-            callback_data=BranchCallback(branch="Chinobod").pack()
+            text="ЕМ Филиал Чиланзар (ритейл)",
+            callback_data=BranchCallback(branch="ЕМ Филиал Чиланзар (ритейл)").pack()
         )],
         [InlineKeyboardButton(
-            text="Jomiy",
-            callback_data=BranchCallback(branch="Jomiy").pack()
+            text="ЕМ Филиал Чинабад (ритейл)",
+            callback_data=BranchCallback(branch="ЕМ Филиал Чинабад (ритейл)").pack()
         )],
         [InlineKeyboardButton(
-            text="Chilonzor",
-            callback_data=BranchCallback(branch="Chilonzor").pack()
+            text="ЕМ Филиал",
+            callback_data=BranchCallback(branch="ЕМ Филиал").pack()
         )],
         [InlineKeyboardButton(
-            text="Qorasuv",
-            callback_data=BranchCallback(branch="Qorasuv").pack()
+            text="Филиал (ритейл)",
+            callback_data=BranchCallback(branch="Филиал (ритейл)").pack()
         )],
         [InlineKeyboardButton(
-            text="Центральный офис",
+            text="ЕМ Филиал Карасу (ритейл)",
             callback_data=BranchCallback(branch="Central office").pack()
         )],
         [InlineKeyboardButton(
@@ -95,7 +95,7 @@ def get_branch_keyboard():
 async def handle_start(message: Message) -> None:
     """Handle /start command - show welcome message."""
     await message.answer(
-        "Dobryj den'! Добро пожаловать в бота для обратной связи! 👋\n\n"
+        "Добрый день! Добро пожаловать в бота для обратной связи! 👋\n\n"
         "Я здесь, чтобы помочь вам отправить претензии, пожелания, предложения по улучшению, идеи, жалобы, комментарии по процессам, условиям труда, управлению, коммуникациям, любые другие мысли и обращения. Используйте /new, чтобы начать создание нового отзыва.\n\n"
         "Ваша обратная связь помогает нам улучшаться, и вы можете остаться анонимным или добавить свои данные."
     )
