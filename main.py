@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 import aiofiles
 
 from database import init_db, close_db, save_feedback_to_db, check_rate_limit, update_user_submission_time
+from admin_notifications import send_to_admin
 
 BOT_TOKEN_ENV = "BOT_TOKEN"
 FEEDBACK_FILE = "feedback.txt"
@@ -263,7 +264,7 @@ async def save_feedback(
     name: Optional[str] = None,
     phone: Optional[str] = None,
     file_paths: Optional[List[Tuple[str, str]]] = None
-) -> None:
+) -> int:
     """Save feedback to database and optionally to file."""
     # Save to database
     try:
@@ -279,6 +280,7 @@ async def save_feedback(
         await update_user_submission_time(user_id)
         
         logging.info(f"Feedback saved to database with ID: {feedback_id}")
+        return feedback_id
     except Exception as e:
         logging.error(f"Error saving feedback to database: {e}")
         raise
@@ -555,7 +557,19 @@ async def handle_keep_anonymous(callback: CallbackQuery, callback_data: Feedback
     user_id = callback.from_user.id
     
     try:
-        await save_feedback(feedback_text, branch, user_id, name=None, phone=None, file_paths=file_paths)
+        feedback_id = await save_feedback(feedback_text, branch, user_id, name=None, phone=None, file_paths=file_paths)
+        
+        # Send notification to admin
+        await send_to_admin(
+            bot=callback.message.bot,
+            feedback_id=feedback_id,
+            text=feedback_text,
+            branch=branch,
+            user_name=None,
+            phone=None,
+            file_paths=file_paths
+        )
+        
         await callback.message.edit_text(
             "✅ Ваш отзыв был сохранен анонимно.\n\n"
             "Спасибо за вашу отправку!"
@@ -624,7 +638,19 @@ async def handle_details_submission(message: Message) -> None:
         file_paths = feedback_data.get("files", []) if isinstance(feedback_data, dict) else []
         
         try:
-            await save_feedback(feedback_text, branch, user_id, name=name, phone=phone, file_paths=file_paths)
+            feedback_id = await save_feedback(feedback_text, branch, user_id, name=name, phone=phone, file_paths=file_paths)
+            
+            # Send notification to admin
+            await send_to_admin(
+                bot=message.bot,
+                feedback_id=feedback_id,
+                text=feedback_text,
+                branch=branch,
+                user_name=name,
+                phone=phone,
+                file_paths=file_paths
+            )
+            
             await message.answer(
                 "✅ Ваш отзыв был сохранен с вашими данными.\n\n"
                 "Спасибо за вашу отправку!"
