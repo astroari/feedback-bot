@@ -11,6 +11,8 @@ from aiogram.filters import CommandStart, Command, BaseFilter
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram import types
+from typing import Dict, List
+
 
 
 from dotenv import load_dotenv
@@ -26,7 +28,9 @@ FILES_DIR = Path("user_files")
 pending_feedback = {}
 
 # Temporary storage for media groups (key: media_group_id, value: list of messages)
-media_groups: dict[str, List[Message]] = {}
+# media_groups: dict[str, List[Message]] = {}
+media_groups: Dict[str, List[Message]] = {}
+
 # Track which media groups are already being processed to avoid duplicates
 processing_media_groups: set[str] = set()
 
