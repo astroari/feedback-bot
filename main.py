@@ -74,16 +74,12 @@ def get_branch_keyboard():
             callback_data=BranchCallback(branch="ЕМ Филиал Чинабад (ритейл)").pack()
         )],
         [InlineKeyboardButton(
-            text="ЕМ Филиал",
-            callback_data=BranchCallback(branch="ЕМ Филиал").pack()
-        )],
-        [InlineKeyboardButton(
-            text="Филиал (ритейл)",
-            callback_data=BranchCallback(branch="Филиал (ритейл)").pack()
+            text="ЕМ Филиал Жами (ритейл)",
+            callback_data=BranchCallback(branch="ЕМ Филиал Жами (ритейл)").pack()
         )],
         [InlineKeyboardButton(
             text="ЕМ Филиал Карасу (ритейл)",
-            callback_data=BranchCallback(branch="Central office").pack()
+            callback_data=BranchCallback(branch="ЕМ Филиал Карасу (ритейл)").pack()
         )],
         [InlineKeyboardButton(
             text="Не указывать",
