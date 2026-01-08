@@ -62,6 +62,16 @@ class WaitingForDetailsFilter(BaseFilter):
         waiting_phone_key = f"waiting_phone:{user_id}"
         return waiting_name_key in pending_feedback or waiting_phone_key in pending_feedback
 
+
+class WaitingForBranchFilter(BaseFilter):
+    """Filter to check if we're waiting for branch input from the user."""
+    async def __call__(self, message: Message) -> bool:
+        if not message.text or message.text.startswith('/'):
+            return False
+        user_id = message.from_user.id
+        waiting_branch_key = f"waiting_branch:{user_id}"
+        return waiting_branch_key in pending_feedback
+
 def get_branch_keyboard():
     """Create inline keyboard for branch selection."""
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -117,6 +127,7 @@ async def handle_new(message: Message) -> None:
         f"waiting_files:{user_id}",
         f"waiting_name:{user_id}",
         f"waiting_phone:{user_id}",
+        f"waiting_branch:{user_id}",
         f"branch:{user_id}",
         f"user_name:{user_id}",
         f"files:{user_id}"
@@ -124,11 +135,13 @@ async def handle_new(message: Message) -> None:
     for key in keys_to_remove:
         pending_feedback.pop(key, None)
     
+    # Mark that we're waiting for branch input
+    pending_feedback[f"waiting_branch:{user_id}"] = True
+    
     await message.answer(
         "Ваше обращение полностью анонимно и конфиденциально.\n\n"
         "Вы можете указать свои контактные данные или имя по желанию — это необязательно.\n\n"
-        "Сначала, пожалуйста, выберите ваш филиал:",
-        reply_markup=get_branch_keyboard()
+        "Для понимания решения вопроса вы можете написать с какого вы подразделения (или отправьте /skip, чтобы пропустить этот шаг):"
     )
 
 
@@ -160,6 +173,66 @@ async def handle_branch_selection(callback: CallbackQuery, callback_data: Branch
         "Теперь, пожалуйста, напишите ваш отзыв:"
     )
     await callback.answer()
+
+
+async def handle_branch_input(message: Message) -> None:
+    """Handle branch text input or skip."""
+    user_id = message.from_user.id
+    waiting_branch_key = f"waiting_branch:{user_id}"
+    
+    # Check if we're waiting for branch input
+    if waiting_branch_key not in pending_feedback:
+        return  # Not in branch input flow, ignore
+    
+    # Remove waiting flag
+    pending_feedback.pop(waiting_branch_key, None)
+    
+    # Get branch text
+    branch_text = message.text.strip() if message.text else ""
+    
+    # Check if user wants to skip (empty, "skip", "/skip", or similar)
+    if not branch_text or branch_text.lower() in ["skip", "/skip", "пропустить", "не указывать"]:
+        branch = "Не указан"
+    else:
+        branch = branch_text
+    
+    # Store branch and mark that we're waiting for feedback
+    pending_feedback[f"branch:{user_id}"] = branch
+    pending_feedback[f"waiting_feedback:{user_id}"] = True
+    
+    if branch == "Не указан":
+        await message.answer(
+            "✅ Филиал не указан.\n\n"
+            "Теперь, пожалуйста, напишите ваш отзыв:"
+        )
+    else:
+        await message.answer(
+            f"✅ Филиал указан: {branch}\n\n"
+            "Теперь, пожалуйста, напишите ваш отзыв:"
+        )
+
+
+async def handle_skip(message: Message) -> None:
+    """Handle /skip command to skip branch input."""
+    user_id = message.from_user.id
+    waiting_branch_key = f"waiting_branch:{user_id}"
+    
+    # Check if we're waiting for branch input
+    if waiting_branch_key not in pending_feedback:
+        await message.answer("Нет активного процесса для пропуска. Используйте /new, чтобы начать.")
+        return
+    
+    # Remove waiting flag
+    pending_feedback.pop(waiting_branch_key, None)
+    
+    # Store branch as "Не указан" and mark that we're waiting for feedback
+    pending_feedback[f"branch:{user_id}"] = "Не указан"
+    pending_feedback[f"waiting_feedback:{user_id}"] = True
+    
+    await message.answer(
+        "✅ Филиал не указан.\n\n"
+        "Теперь, пожалуйста, напишите ваш отзыв:"
+    )
 
 
 async def download_file(bot: Bot, file_id: str, file_type: str, user_id: int) -> Optional[str]:
@@ -679,6 +752,7 @@ async def main() -> None:
     # Register handlers - order matters!
     dp.message.register(handle_start, CommandStart())
     dp.message.register(handle_new, Command("new"))
+    dp.message.register(handle_skip, Command("skip"))
     
     # Register callback handlers first (they have specific filters)
     dp.callback_query.register(handle_branch_selection, BranchCallback.filter())
@@ -689,7 +763,8 @@ async def main() -> None:
     dp.callback_query.register(handle_keep_anonymous, FeedbackCallback.filter(F.action == "keep_anonymous"))
     dp.callback_query.register(handle_add_details, FeedbackCallback.filter(F.action == "add_details"))
     
-    # Register message handlers - details submission with filter, then feedback
+    # Register message handlers - order matters: branch input, then details, then feedback
+    dp.message.register(handle_branch_input, WaitingForBranchFilter())  # Only when waiting for branch
     dp.message.register(handle_details_submission, WaitingForDetailsFilter())  # Only when waiting for details
     dp.message.register(handle_feedback)  # Handle regular feedback
 
